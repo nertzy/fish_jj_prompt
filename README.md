@@ -22,7 +22,7 @@ Displays the current working-copy change ID, bookmarks, commit ID, ahead/behind 
 ### Via [Fisher](https://github.com/jorgebucaran/fisher)
 
 ```fish
-fisher install nertzy/fish_jj_prompt.fish
+fisher install nertzy/fish_jj_prompt
 ```
 
 ### Manually
