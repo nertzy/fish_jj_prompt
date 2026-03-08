@@ -79,13 +79,22 @@ touch .disable-jj-prompt
  └ working copy marker
 ```
 
+Bookmarks that need to be pushed (no tracking remote, or differ from their tracked remote) are shown with a trailing `*` by jj — this passes through automatically into the prompt.
+
 Tags on @ and ancestor commits between @ and trunk are shown alongside bookmarks. Tags on trunk itself are not shown.
 
 ```
-(@ abc1 def2 my-feature)           # on bookmark "my-feature"
-(@ abc1 def2 * my-feature↑2 ↑3)    # 3 ahead of trunk, my-feature is 2 up
-(@ abc1 def2 * ↑3 ↓1)              # 3 ahead of trunk, 1 behind
-(@ abc1 def2 ×)                    # conflict
+(@ abc1 def2 (empty) ↑1)             # new empty commit, 1 ahead of trunk
+(@ abc1 def2 * ↑1)                   # modified, 1 ahead of trunk
+(@ abc1 def2 * my-feature ↑1)        # on bookmark, 1 ahead
+(@ abc1 def2 (empty) my-feature ↑1)  # on bookmark, no changes yet
+(@ abc1 def2 my-feature* ↑3)         # unpushed bookmark, 3 ahead
+(@ abc1 def2 * api↑1 ui↑3 ↑4)        # stacked branches at different depths
+(@ abc1 def2 (merged) api↑1 ui↑1 ↑2) # merge of two branches, each 1 up
+(@ abc1 def2 * my-feature↑2 ↑3)      # 3 ahead, my-feature is 2 commits up
+(@ abc1 def2 * ↑3 ↓1)                # 3 ahead, 1 behind trunk
+(@ abc1 def2 × ↑2)                   # conflict, 2 ahead
+(@ abc1 def2 ◆ *)                    # on trunk (immutable, has content)
 ```
 
 ## License

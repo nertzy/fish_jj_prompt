@@ -77,7 +77,7 @@ if(self.contained_in("::trunk() & ~::@"),
 )
 '
     set -l raw_lines (jj log --no-pager --no-graph --ignore-working-copy --color=always \
-        -r 'trunk()..@ | (::trunk() & ~::@)' \
+        -r '@ | trunk()..@ | (::trunk() & ~::@)' \
         -T $tmpl 2>/dev/null)
     or return 1
 

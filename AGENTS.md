@@ -37,3 +37,4 @@ There is no test suite. Manual testing by sourcing the function in a fish shell 
 - `self.contained_in("@-")` checks parent, `@--` grandparent, etc.
 - `local_bookmarks` is a list type — can use in `if()` but avoid with `&&`/`||`.
 - The template is stored in a fish variable (not inline) to avoid fish parser escaping issues.
+- jj automatically appends `*` to bookmark names that are unpushed (no tracking remote or differ from tracked remote). This passes through in the template output and is displayed as-is.
