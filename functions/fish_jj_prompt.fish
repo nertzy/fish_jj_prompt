@@ -5,49 +5,44 @@ function fish_jj_prompt
         return 1
     end
 
-    set -l jj_root (jj root --quiet 2>/dev/null)
-    if test -n "$jj_root"; and test -f "$jj_root/.disable-jj-prompt"
-        return 1
-    end
-
-    # Build depth expression dynamically: coalesce(if(@-,"1"),if(@--,"2"),...,"?")
-    if not set -q __fish_jj_depth_expr
-        set -l parts
-        set -l dashes ''
-        for i in (seq 1 20)
-            set dashes "$dashes-"
-            set -a parts 'if(self.contained_in("@'$dashes'"),"'$i'")'
+    # Walk up to find .jj/ repo root; check for disable file (no subprocess)
+    set -l d $PWD
+    while test -n "$d"
+        if test -d "$d/.jj"
+            test -f "$d/.disable-jj-prompt"; and return 1
+            break
         end
-        set -g __fish_jj_depth_expr 'coalesce('(string join ',' $parts)',"?")'
+        set d (string replace -r '/[^/]*$' '' -- $d)
     end
 
-    # jj template stored in a variable to avoid fish parser escaping issues.
-    # Single jj call: query all ancestors of @ and commits behind trunk.
-    # For @: outputs colored working copy info, TAB, then bookmark data.
-    # For other ancestors with bookmarks: outputs "depth:bookmark_data".
-    # For other ancestors without bookmarks: outputs ".".
-    # For behind-trunk commits: outputs "B".
-    set -l depth_expr $__fish_jj_depth_expr
+    # All jj queries use --color=never. Colors are applied in fish.
+    #
+    # Main query outputs structured plain text:
+    #   @ line:       change_id \t commit_id \t status \t bookmarks_or_dot
+    #   ancestor:     change_id \t bookmarks  (if bookmarked)
+    #   ancestor:     .                       (if not bookmarked)
+    #   behind:       B
+    #
+    # Ahead = total line count (excluding B lines).
+    # Bookmark depth = |bookmark::@ ~ bookmark| via sub-query.
     set -l tmpl '
 if(self.contained_in("::trunk() & ~::@"),
     "B\n",
     if(self.contained_in("@"),
-        label("working_copy",
-            separate(" ",
-                change_id.shortest(),
-                commit_id.shortest(),
-                if(conflict, label("conflict", "×")),
-                if(divergent, label("divergent", "??")),
-                if(hidden, label("hidden prefix", "(hidden)")),
-                if(immutable, label("node immutable", "◆")),
-                coalesce(
-                    if(empty, coalesce(
-                        if(parents.len() > 1, label("empty", "(merged)")),
-                        label("empty", "(empty)"),
-                    )),
-                    label("description placeholder", "*")
-                ),
-            )
+        change_id.shortest() ++ "\t" ++
+        commit_id.shortest() ++ "\t" ++
+        separate(" ",
+            if(conflict, "×"),
+            if(divergent, "??"),
+            if(hidden, "(hidden)"),
+            if(immutable, "◆"),
+            coalesce(
+                if(empty, coalesce(
+                    if(parents.len() > 1, "(merged)"),
+                    "(empty)",
+                )),
+                "*",
+            ),
         ) ++ "\t" ++
         if(self.contained_in("trunk()"),
             ".",
@@ -63,12 +58,12 @@ if(self.contained_in("::trunk() & ~::@"),
         if(self.contained_in("trunk()"),
             ".\n",
             if(local_bookmarks,
-                '$depth_expr' ++ ":" ++ separate(",",
+                change_id.shortest() ++ "\t" ++ separate(",",
                     local_bookmarks.join(","),
                     if(tags, tags.join(",")),
                 ) ++ "\n",
                 if(tags,
-                    '$depth_expr' ++ ":" ++ tags.join(",") ++ "\n",
+                    change_id.shortest() ++ "\t" ++ tags.join(",") ++ "\n",
                     ".\n",
                 )
             )
@@ -76,54 +71,71 @@ if(self.contained_in("::trunk() & ~::@"),
     )
 )
 '
-    set -l raw_lines (jj log --no-pager --no-graph --ignore-working-copy --color=always \
+    set -l raw_lines (jj log --no-pager --no-graph --ignore-working-copy --color=never \
         -r '@ | trunk()..@ | (::trunk() & ~::@)' \
         -T $tmpl 2>/dev/null)
     or return 1
 
-    # Parse output
-    set -l info ""
-    set -l behind 0
-    set -l ahead 0
-
-    set -l bold_magenta (set_color --bold magenta)
+    # Colors
+    set -l bold_brmagenta (set_color --bold brmagenta)
     set -l magenta (set_color magenta)
+    set -l bold_brblue (set_color --bold brblue)
+    set -l bold_brgreen (set_color --bold brgreen)
+    set -l bold_brred (set_color --bold brred)
+    set -l bold_yellow (set_color --bold yellow)
     set -l gray (set_color brblack)
     set -l reset (set_color normal)
 
+    set -l info ""
+    set -l has_conflict 0
+    set -l behind 0
+    set -l ahead 0
     set -l display_bookmarks
 
     for line in $raw_lines
-        if string match -rq "\t" -- $line
-            # TAB line: @ info + bookmark data
-            set -l parts (string split \t -- $line)
-            set info $parts[1]
-            # @ bookmarks at depth 0 (bold, matching jj log style)
-            if test "$parts[2]" != "."
-                for bookmark in (string split ',' -- $parts[2])
+        if test "$line" = B
+            set behind (math $behind + 1)
+            continue
+        end
+
+        set ahead (math $ahead + 1)
+        set -l parts (string split \t -- $line)
+        set -l nparts (count $parts)
+
+        if test $nparts -ge 4
+            # @ line: change_id, commit_id, status, bookmarks
+            set -l status_color $bold_brgreen
+            if string match -q '*×*' -- "$parts[3]"
+                set status_color $bold_brred
+                set has_conflict 1
+            else if string match -q '*\?\?*' -- "$parts[3]"
+                set status_color $bold_brred
+            else if test "$parts[3]" = "*"
+                set status_color $bold_yellow
+            end
+            set info "$bold_brmagenta$parts[1]$reset $bold_brblue$parts[2]$reset $status_color$parts[3]$reset"
+            if test "$parts[4]" != "."
+                for bookmark in (string split ',' -- $parts[4])
                     set bookmark (string trim -- $bookmark)
                     if test -n "$bookmark"
-                        set -a display_bookmarks "$bold_magenta$bookmark$reset"
+                        set -a display_bookmarks "$bold_brmagenta$bookmark$reset"
                     end
                 end
             end
-        else if test "$line" = B
-            set behind (math $behind + 1)
-        else
-            set ahead (math $ahead + 1)
-            if test "$line" != "."
-                # Parse "depth:bookmark1,bookmark2" format
-                set -l parts (string split -m1 ':' -- $line)
-                set -l depth $parts[1]
-                set -l bm_data $parts[2]
-                for bookmark in (string split ',' -- $bm_data)
-                    set bookmark (string trim -- $bookmark)
-                    if test -n "$bookmark"
-                        set -a display_bookmarks "$magenta$bookmark$magenta↑$depth$reset"
-                    end
+        else if test $nparts -eq 2
+            # Ancestor with bookmarks: change_id, bookmarks
+            set -l cid $parts[1]
+            set -l depth_commits (jj log --no-pager --no-graph --ignore-working-copy --color=never \
+                -r "$cid::@ ~ $cid" -T '".\n"' 2>/dev/null)
+            set -l depth (count $depth_commits)
+            for bookmark in (string split ',' -- $parts[2])
+                set bookmark (string trim -- $bookmark)
+                if test -n "$bookmark"
+                    set -a display_bookmarks "$magenta$bookmark$magenta↑$depth$reset"
                 end
             end
         end
+        # "." lines (nparts=1, not "B") just count toward ahead
     end
 
     # Assemble prompt
@@ -137,7 +149,10 @@ if(self.contained_in("::trunk() & ~::@"),
         if test $behind -gt 0
             set info "$info $gray↓$behind$reset"
         end
-        set -l green (set_color --bold green)
-        printf ' (%s%s%s)' "$green" @ "$reset $info"
+        set -l at_color (set_color --bold green)
+        if test $has_conflict -eq 1
+            set at_color (set_color --bold red)
+        end
+        printf ' (%s%s%s)' "$at_color" @ "$reset $info"
     end
 end
