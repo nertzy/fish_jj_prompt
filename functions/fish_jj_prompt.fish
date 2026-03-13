@@ -80,14 +80,19 @@ if(self.contained_in("::trunk() & ~::@"),
     or return 1
 
     # Colors
-    set -l bold_brmagenta (set_color --bold brmagenta)
+    set -l bold_brmagenta (set_color brmagenta)
     set -l magenta (set_color magenta)
-    set -l bold_brblue (set_color --bold brblue)
-    set -l bold_brgreen (set_color --bold brgreen)
-    set -l bold_brred (set_color --bold brred)
-    set -l bold_yellow (set_color --bold yellow)
+    set -l bold_brblue (set_color brblue)
+    set -l bold_brgreen (set_color brgreen)
+    set -l bold_brred (set_color brred)
+    set -l bold_yellow (set_color yellow)
     set -l gray (set_color brblack)
-    set -l reset (set_color normal)
+    set -l reset (printf '\e[39m')
+
+    set -l use_bold true
+    set -q fish_jj_prompt_bold; and set use_bold $fish_jj_prompt_bold
+    set -l bold ""
+    test "$use_bold" = true; and set bold (printf '\e[1m')
 
     set -l info ""
     set -l has_conflict 0
@@ -113,7 +118,7 @@ if(self.contained_in("::trunk() & ~::@"),
             set -l divergent_label ""
             set -l cid_color $bold_brmagenta
             if string match -q '*(divergent)*' -- "$st"
-                set -l divergent_esc (printf '\e[1;38;5;9m')
+                set -l divergent_esc (printf '\e[38;5;9m')
                 set divergent_label " $divergent_esc(divergent)$reset"
                 set cid_color $divergent_esc
                 set st (string replace ' (divergent)' '' -- $st)
@@ -133,7 +138,7 @@ if(self.contained_in("::trunk() & ~::@"),
             # Author (only shown if not mine)
             set -l author_label ""
             if test "$parts[2]" != "."
-                set -l author_color (printf '\e[1;38;5;3m')
+                set -l author_color (printf '\e[38;5;3m')
                 set author_label " $author_color$parts[2]$reset"
             end
             # Bookmarks at @
@@ -154,7 +159,7 @@ if(self.contained_in("::trunk() & ~::@"),
             set -l workspace_label ""
             set -l wc_count (jj workspace list --no-pager --color=never 2>/dev/null | count)
             if test $wc_count -gt 1; and test -n "$parts[4]"
-                set -l bold_brgreen_color (set_color --bold brgreen)
+                set -l bold_brgreen_color (set_color brgreen)
                 set workspace_label " $bold_brgreen_color$parts[4]$reset"
             end
             # Description (configurable via fish_jj_prompt_show_description and fish_jj_prompt_description_length)
@@ -171,7 +176,7 @@ if(self.contained_in("::trunk() & ~::@"),
                 if test "$parts[8]" = "(no description set)"
                     set desc_label " $status_color$desc$reset"
                 else
-                    set desc_label " "(printf '\e[1m')"$desc$reset"
+                    set desc_label " $desc"
                 end
             end
             set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[5]$reset $status_color$st$reset$divergent_label$desc_label"
@@ -184,7 +189,8 @@ if(self.contained_in("::trunk() & ~::@"),
             for bookmark in (string split ',' -- $parts[2])
                 set bookmark (string trim -- $bookmark)
                 if test -n "$bookmark"
-                    set -a display_bookmarks "$magenta$bookmark$magenta↑$depth$reset"
+                    set -l nobold (printf '\e[22m')
+                    set -a display_bookmarks "$magenta$bookmark$nobold$magenta↑$depth$reset$bold"
                 end
             end
         end
@@ -196,18 +202,20 @@ if(self.contained_in("::trunk() & ~::@"),
         if test (count $display_bookmarks) -gt 0
             set info "$info "(string join ' ' $display_bookmarks)
         end
+        set -l nobold (printf '\e[22m')
         if test $ahead -gt 0
-            set info "$info $gray↑$ahead$reset"
+            set info "$info $nobold$gray↑$ahead$reset"
         end
         if test $behind -gt 0
-            set info "$info $gray↓$behind$reset"
+            set info "$info $nobold$gray↓$behind$reset"
         end
-        set -l at_color (set_color --bold green)
+        set -l at_color (set_color green)
         if test $has_conflict -eq 1
-            set at_color (set_color --bold red)
+            set at_color (set_color red)
         else if test $has_immutable -eq 1
-            set at_color (printf '\e[1;38;5;14m')
+            set at_color (printf '\e[38;5;14m')
         end
-        printf ' (%s%s%s)' "$at_color" @ "$reset $info"
+        set -l full_reset (set_color normal)
+        printf ' (%s%s%s%s%s)' "$bold" "$at_color" @ "$reset $info" "$full_reset"
     end
 end
