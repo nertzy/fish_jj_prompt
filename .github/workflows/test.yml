@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Fish
+        uses: fish-shop/install-fish-shell@v1
+
+      - name: Install jj
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo jj-vcs/jj --pattern '*x86_64-unknown-linux-musl*' --output - | sudo tar xz -C /usr/local/bin
+
+      - name: Run tests
+        uses: fish-shop/run-fishtape-tests@v2
+        with:
+          patterns: tests/test_fish_jj_prompt.fish
