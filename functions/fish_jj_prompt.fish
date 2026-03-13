@@ -157,12 +157,16 @@ if(self.contained_in("::trunk() & ~::@"),
                 set -l bold_brgreen_color (set_color --bold brgreen)
                 set workspace_label " $bold_brgreen_color$parts[4]$reset"
             end
-            # Description truncated to 24 chars
+            # Description (configurable via fish_jj_prompt_show_description and fish_jj_prompt_description_length)
+            set -l show_desc true
+            set -q fish_jj_prompt_show_description; and set show_desc $fish_jj_prompt_show_description
+            set -l desc_length 24
+            set -q fish_jj_prompt_description_length; and set desc_length $fish_jj_prompt_description_length
             set -l desc_label ""
-            if test -n "$parts[8]"
-                set -l desc (string sub -l 24 -- $parts[8])
-                if test (string length -- $parts[8]) -gt 24
-                    set desc "$desc…"
+            if test -n "$parts[8]"; and test "$show_desc" = true
+                set -l desc $parts[8]
+                if test $desc_length -gt 0; and test (string length -- $desc) -gt $desc_length
+                    set desc (string sub -l $desc_length -- $desc)"…"
                 end
                 if test "$parts[8]" = "(no description set)"
                     set desc_label " $status_color$desc$reset"

@@ -76,6 +76,20 @@ Create a `.disable-jj-prompt` file at the root of any jj repo to suppress the pr
 touch .disable-jj-prompt
 ```
 
+## Configuration
+
+| Variable | Default | Description |
+|---|---|---|
+| `fish_jj_prompt_show_description` | `true` | Set to `false` to hide the commit description. |
+| `fish_jj_prompt_description_length` | `24` | Max characters for commit description. `0` for no truncation. |
+
+```fish
+# In config.fish or interactively:
+set -g fish_jj_prompt_description_length 40   # longer descriptions
+set -g fish_jj_prompt_description_length 0    # full description, no truncation
+set -g fish_jj_prompt_show_description false   # hide description entirely
+```
+
 ## Prompt Output Examples
 
 ```
