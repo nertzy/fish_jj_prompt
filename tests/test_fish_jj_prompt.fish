@@ -263,8 +263,6 @@ set -e fish_jj_prompt_bold
 
 # --- Parallel paths ahead count ---
 
-@echo "parallel paths"
-
 setup_repo
 echo "base" >file.txt
 jj desc --no-pager -m "base" 2>/dev/null
