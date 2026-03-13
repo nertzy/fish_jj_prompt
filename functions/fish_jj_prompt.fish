@@ -29,13 +29,24 @@ function fish_jj_prompt
 if(self.contained_in("::trunk() & ~::@"),
     "B\n",
     if(self.contained_in("@"),
-        change_id.shortest() ++ "\t" ++
+        change_id.shortest() ++
+            if(divergent, "/" ++ change_offset) ++
+        "\t" ++
+        if(self.contained_in("mine()"), ".", coalesce(author.email().local(), author.name(), ".")) ++
+        "\t" ++
+        coalesce(
+            separate(",",
+                if(local_bookmarks, local_bookmarks.join(",")),
+                if(tags, tags.join(",")),
+            ),
+            ".",
+        ) ++ "\t" ++
+        working_copies ++ "\t" ++
         commit_id.shortest() ++ "\t" ++
         separate(" ",
             if(conflict, "×"),
-            if(divergent, "??"),
+            if(divergent, "(divergent)"),
             if(hidden, "(hidden)"),
-            if(immutable, "◆"),
             coalesce(
                 if(empty, coalesce(
                     if(parents.len() > 1, "(merged)"),
@@ -44,16 +55,8 @@ if(self.contained_in("::trunk() & ~::@"),
                 "*",
             ),
         ) ++ "\t" ++
-        if(self.contained_in("trunk()"),
-            ".",
-            coalesce(
-                separate(",",
-                    if(local_bookmarks, local_bookmarks.join(",")),
-                    if(tags, tags.join(",")),
-                ),
-                ".",
-            ),
-        ) ++ "\n"
+        immutable ++ "\t" ++
+        if(description, description.first_line(), "(no description set)") ++ "\n"
     ,
         if(self.contained_in("trunk()"),
             ".\n",
@@ -88,6 +91,7 @@ if(self.contained_in("::trunk() & ~::@"),
 
     set -l info ""
     set -l has_conflict 0
+    set -l has_immutable 0
     set -l behind 0
     set -l ahead 0
     set -l display_bookmarks
@@ -102,26 +106,71 @@ if(self.contained_in("::trunk() & ~::@"),
         set -l parts (string split \t -- $line)
         set -l nparts (count $parts)
 
-        if test $nparts -ge 4
-            # @ line: change_id, commit_id, status, bookmarks
+        if test $nparts -ge 8
+            # @ line fields: change_id[1] author[2] bookmarks[3] working_copies[4] commit_id[5] status[6] immutable[7] description[8]
+            # Separate (divergent) from other status flags for distinct coloring
+            set -l st $parts[6]
+            set -l divergent_label ""
+            set -l cid_color $bold_brmagenta
+            if string match -q '*(divergent)*' -- "$st"
+                set -l divergent_esc (printf '\e[1;38;5;9m')
+                set divergent_label " $divergent_esc(divergent)$reset"
+                set cid_color $divergent_esc
+                set st (string replace ' (divergent)' '' -- $st)
+                set st (string replace '(divergent) ' '' -- $st)
+                set st (string replace '(divergent)' '' -- $st)
+            end
             set -l status_color $bold_brgreen
-            if string match -q '*×*' -- "$parts[3]"
+            if string match -q '*×*' -- "$st"
                 set status_color $bold_brred
                 set has_conflict 1
-            else if string match -q '*\?\?*' -- "$parts[3]"
-                set status_color $bold_brred
-            else if test "$parts[3]" = "*"
+            else if test "$st" = "*"
                 set status_color $bold_yellow
             end
-            set info "$bold_brmagenta$parts[1]$reset $bold_brblue$parts[2]$reset $status_color$parts[3]$reset"
-            if test "$parts[4]" != "."
-                for bookmark in (string split ',' -- $parts[4])
+            if test "$parts[7]" = true
+                set has_immutable 1
+            end
+            # Author (only shown if not mine)
+            set -l author_label ""
+            if test "$parts[2]" != "."
+                set -l author_color (printf '\e[1;38;5;3m')
+                set author_label " $author_color$parts[2]$reset"
+            end
+            # Bookmarks at @
+            set -l at_bookmarks ""
+            if test "$parts[3]" != "."
+                set -l at_bm_list
+                for bookmark in (string split ',' -- $parts[3])
                     set bookmark (string trim -- $bookmark)
                     if test -n "$bookmark"
-                        set -a display_bookmarks "$bold_brmagenta$bookmark$reset"
+                        set -a at_bm_list "$bold_brmagenta$bookmark$reset"
                     end
                 end
+                if test (count $at_bm_list) -gt 0
+                    set at_bookmarks " "(string join ' ' $at_bm_list)
+                end
             end
+            # Show workspace if multiple workspaces exist
+            set -l workspace_label ""
+            set -l wc_count (jj workspace list --no-pager --color=never 2>/dev/null | count)
+            if test $wc_count -gt 1; and test -n "$parts[4]"
+                set -l bold_brgreen_color (set_color --bold brgreen)
+                set workspace_label " $bold_brgreen_color$parts[4]$reset"
+            end
+            # Description truncated to 24 chars
+            set -l desc_label ""
+            if test -n "$parts[8]"
+                set -l desc (string sub -l 24 -- $parts[8])
+                if test (string length -- $parts[8]) -gt 24
+                    set desc "$desc…"
+                end
+                if test "$parts[8]" = "(no description set)"
+                    set desc_label " $status_color$desc$reset"
+                else
+                    set desc_label " "(printf '\e[1m')"$desc$reset"
+                end
+            end
+            set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[5]$reset $status_color$st$reset$divergent_label$desc_label"
         else if test $nparts -eq 2
             # Ancestor with bookmarks: change_id, bookmarks
             set -l cid $parts[1]
@@ -152,6 +201,8 @@ if(self.contained_in("::trunk() & ~::@"),
         set -l at_color (set_color --bold green)
         if test $has_conflict -eq 1
             set at_color (set_color --bold red)
+        else if test $has_immutable -eq 1
+            set at_color (printf '\e[1;38;5;14m')
         end
         printf ' (%s%s%s)' "$at_color" @ "$reset $info"
     end

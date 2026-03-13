@@ -4,12 +4,24 @@ An enhanced [Fish](https://fishshell.com) prompt for [Jujutsu (jj)](https://gith
 
 Fish ships with a built-in `fish_jj_prompt` that only shows a conflict marker. This plugin replaces it with a much richer prompt: change ID, commit ID, bookmarks, ahead/behind counts, and status flags — all with ANSI color via jj's built-in coloring.
 
+## Design Goals
+
+- Match the default `jj log -r @` output: same fields, same order, same colors
+- Use short forms: shortest unique change/commit IDs, email local part only, description truncated to 24 chars
+- Omit the date
+- Omit your own email (only show author for others' commits via `mine()`)
+- Add ahead/behind counts (↑N/↓N) and ancestor bookmark depth indicators
+
 ## Features
 
 - Shows change ID and commit ID (shortest unique prefix)
 - Displays bookmarks at `@` and ancestor commits, with depth indicators (↑N)
 - Shows ahead count (commits above nearest bookmark) and behind count (commits behind trunk)
-- Labels for conflict (`×`), divergent (`??`), hidden, immutable (`◆`), empty/(merged)
+- Shows description (truncated to 24 characters)
+- Labels for conflict (`×`), divergent (`(divergent)` with change offset), hidden, empty/(merged)
+- Immutable working copy indicated by `@` color (cyan instead of green), matching jj log
+- Shows author (email local part) when the commit is not yours (`mine()`)
+- Shows workspace name when multiple workspaces exist
 - Returns early (exit 1) if jj is not installed or a `.disable-jj-prompt` file exists at the repo root
 
 ## Requirements
@@ -67,16 +79,18 @@ touch .disable-jj-prompt
 ## Prompt Output Examples
 
 ```
-(@ abc1 def2 * my-feature main↑2 ↑3 ↓1)
- |  |    |   |     |        |    |   |
- |  |    |   |     |        |    |   └ behind trunk
- |  |    |   |     |        |    └ ahead of trunk
- |  |    |   |     |        └ ancestor bookmark (2 commits up)
- |  |    |   |     └ bookmark at @
- |  |    |   └ status: * modified, (empty), (merged), × conflict, ?? divergent, ◆ immutable
- |  |    └ commit ID (shortest unique prefix)
- |  └ change ID (shortest unique prefix)
- └ working copy marker
+(@ abc1 jdoe my-feature default@ def2 * Add foo feature ↑3 ↓1)
+ |  |    |       |         |      |  |       |            |   |
+ |  |    |       |         |      |  |       |            |   └ behind trunk
+ |  |    |       |         |      |  |       |            └ ahead of trunk
+ |  |    |       |         |      |  |       └ description (truncated to 24 chars)
+ |  |    |       |         |      |  └ status: * modified, (empty), (merged), × conflict, (divergent)
+ |  |    |       |         |      └ commit ID (shortest unique prefix)
+ |  |    |       |         └ workspace (only shown with multiple workspaces)
+ |  |    |       └ bookmark at @
+ |  |    └ author (only shown when not mine())
+ |  └ change ID (shortest unique prefix, with /N variant on divergent changes)
+ └ working copy marker (green = mutable, cyan = immutable, red = conflict)
 ```
 
 Bookmarks that need to be pushed (no tracking remote, or differ from their tracked remote) are shown with a trailing `*` by jj — this passes through automatically into the prompt.
@@ -84,17 +98,19 @@ Bookmarks that need to be pushed (no tracking remote, or differ from their track
 Tags on @ and ancestor commits between @ and trunk are shown alongside bookmarks. Tags on trunk itself are not shown.
 
 ```
-(@ abc1 def2 (empty) ↑1)             # new empty commit, 1 ahead of trunk
-(@ abc1 def2 * ↑1)                   # modified, 1 ahead of trunk
-(@ abc1 def2 * my-feature ↑1)        # on bookmark, 1 ahead
-(@ abc1 def2 (empty) my-feature ↑1)  # on bookmark, no changes yet
-(@ abc1 def2 my-feature* ↑3)         # unpushed bookmark, 3 ahead
-(@ abc1 def2 * api↑1 ui↑3 ↑4)        # stacked branches at different depths
-(@ abc1 def2 (merged) api↑1 ui↑1 ↑2) # merge of two branches, each 1 up
-(@ abc1 def2 * my-feature↑2 ↑3)      # 3 ahead, my-feature is 2 commits up
-(@ abc1 def2 * ↑3 ↓1)                # 3 ahead, 1 behind trunk
-(@ abc1 def2 × ↑2)                   # conflict, 2 ahead
-(@ abc1 def2 ◆ *)                    # on trunk (immutable, has content)
+(@ abc1 def2 (empty) (no description set) ↑1)     # new empty commit
+(@ abc1 def2 * Add user validation ↑1)            # modified, 1 ahead of trunk
+(@ abc1 my-feature def2 * Fix login bug ↑1)       # on bookmark, 1 ahead
+(@ abc1 my-feature def2 (empty) ↑1)               # on bookmark, no changes yet
+(@ abc1 my-feature* def2 * Add search ↑3)         # unpushed bookmark, 3 ahead
+(@ abc1 def2 * Refactor auth… api↑1 ui↑3 ↑4)     # stacked branches at different depths
+(@ abc1 def2 (merged) api↑1 ui↑1 ↑2)              # merge of two branches, each 1 up
+(@ abc1 def2 * Update deps ↑3 ↓1)                 # 3 ahead, 1 behind trunk
+(@ abc1 def2 × Fix merge conflict ↑2)             # conflict, 2 ahead
+(@ abc1 def2 * Release v2.0)                       # on trunk (immutable, cyan @)
+(@ abc1/0 def2 * Fix auth (divergent) ↑1)         # divergent change, variant 0
+(@ abc1 default@ def2 * Add caching ↑1)            # workspace shown (multi-workspace repo)
+(@ abc1 jdoe my-feature def2 * Fix login ↑1)      # someone else's commit
 ```
 
 ## License
