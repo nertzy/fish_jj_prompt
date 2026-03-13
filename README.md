@@ -129,6 +129,15 @@ Tags on @ and ancestor commits between @ and trunk are shown alongside bookmarks
 (@ abc1 jdoe my-feature def2 * Fix login ↑1)      # someone else's commit
 ```
 
+## Testing
+
+Tests use [Fishtape](https://github.com/jorgebucaran/fishtape), a TAP-based test runner for Fish.
+
+```fish
+fisher install jorgebucaran/fishtape   # one-time setup
+fishtape tests/test_fish_jj_prompt.fish
+```
+
 ## License
 
 MIT
