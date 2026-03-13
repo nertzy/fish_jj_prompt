@@ -44,14 +44,11 @@ if(self.contained_in("::trunk() & ~::@"),
         working_copies ++ "\t" ++
         commit_id.shortest() ++ "\t" ++
         separate(" ",
-            if(conflict, "×"),
+            if(conflict, "(conflict)"),
             if(divergent, "(divergent)"),
             if(hidden, "(hidden)"),
             coalesce(
-                if(empty, coalesce(
-                    if(parents.len() > 1, "(merged)"),
-                    "(empty)",
-                )),
+                if(empty, "(empty)"),
                 "*",
             ),
         ) ++ "\t" ++
@@ -125,11 +122,16 @@ if(self.contained_in("::trunk() & ~::@"),
                 set st (string replace '(divergent) ' '' -- $st)
                 set st (string replace '(divergent)' '' -- $st)
             end
-            set -l status_color $bold_brgreen
-            if string match -q '*×*' -- "$st"
-                set status_color $bold_brred
+            set -l conflict_label ""
+            if string match -q '*(conflict)*' -- "$st"
                 set has_conflict 1
-            else if test "$st" = "*"
+                set conflict_label " $bold_brred(conflict)$reset"
+                set st (string replace ' (conflict)' '' -- $st)
+                set st (string replace '(conflict) ' '' -- $st)
+                set st (string replace '(conflict)' '' -- $st)
+            end
+            set -l status_color $bold_brgreen
+            if test "$st" = "*"
                 set status_color $bold_yellow
             end
             if test "$parts[7]" = true
@@ -179,7 +181,7 @@ if(self.contained_in("::trunk() & ~::@"),
                     set desc_label " $desc"
                 end
             end
-            set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[5]$reset $status_color$st$reset$divergent_label$desc_label"
+            set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[5]$reset$conflict_label $status_color$st$reset$divergent_label$desc_label"
         else if test $nparts -eq 2
             # Ancestor with bookmarks: change_id, bookmarks
             set -l cid $parts[1]
@@ -211,7 +213,7 @@ if(self.contained_in("::trunk() & ~::@"),
         end
         set -l at_color (set_color green)
         if test $has_conflict -eq 1
-            set at_color (set_color red)
+            set at_color (printf '\e[38;5;1m')
         else if test $has_immutable -eq 1
             set at_color (printf '\e[38;5;14m')
         end

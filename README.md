@@ -18,7 +18,7 @@ Fish ships with a built-in `fish_jj_prompt` that only shows a conflict marker. T
 - Displays bookmarks at `@` and ancestor commits, with depth indicators (↑N)
 - Shows ahead count (commits above nearest bookmark) and behind count (commits behind trunk)
 - Shows description (truncated to 24 characters)
-- Labels for conflict (`×`), divergent (`(divergent)` with change offset), hidden, empty/(merged)
+- Labels for conflict (`(conflict)`), divergent (`(divergent)` with change offset), hidden, empty
 - Immutable working copy indicated by `@` color (cyan instead of green), matching jj log
 - Shows author (email local part) when the commit is not yours (`mine()`)
 - Shows workspace name when multiple workspaces exist
@@ -100,7 +100,7 @@ set -g fish_jj_prompt_show_description false   # hide description entirely
  |  |    |       |         |      |  |       |            |   └ behind trunk
  |  |    |       |         |      |  |       |            └ ahead of trunk
  |  |    |       |         |      |  |       └ description (truncated to 24 chars)
- |  |    |       |         |      |  └ status: * modified, (empty), (merged), × conflict, (divergent)
+ |  |    |       |         |      |  └ status: * modified, (empty), (conflict), (divergent)
  |  |    |       |         |      └ commit ID (shortest unique prefix)
  |  |    |       |         └ workspace (only shown with multiple workspaces)
  |  |    |       └ bookmark at @
@@ -120,9 +120,9 @@ Tags on @ and ancestor commits between @ and trunk are shown alongside bookmarks
 (@ abc1 my-feature def2 (empty) ↑1)               # on bookmark, no changes yet
 (@ abc1 my-feature* def2 * Add search ↑3)         # unpushed bookmark, 3 ahead
 (@ abc1 def2 * Refactor auth… api↑1 ui↑3 ↑4)     # stacked branches at different depths
-(@ abc1 def2 (merged) api↑1 ui↑1 ↑2)              # merge of two branches, each 1 up
+(@ abc1 def2 (empty) api↑1 ui↑1 ↑2)               # merge commit, empty, each branch 1 up
 (@ abc1 def2 * Update deps ↑3 ↓1)                 # 3 ahead, 1 behind trunk
-(@ abc1 def2 × Fix merge conflict ↑2)             # conflict, 2 ahead
+(@ abc1 def2 (conflict) (empty) ↑2)                # conflict, 2 ahead
 (@ abc1 def2 * Release v2.0)                       # on trunk (immutable, cyan @)
 (@ abc1/0 def2 * Fix auth (divergent) ↑1)         # divergent change, variant 0
 (@ abc1 default@ def2 * Add caching ↑1)            # workspace shown (multi-workspace repo)
