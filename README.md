@@ -1,5 +1,7 @@
 # fish_jj_prompt.fish
 
+[![Test](https://github.com/nertzy/fish_jj_prompt/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/nertzy/fish_jj_prompt/actions/workflows/test.yml?query=branch%3Amain)
+
 An enhanced [Fish](https://fishshell.com) prompt for [Jujutsu (jj)](https://github.com/jj-vcs/jj) repositories.
 
 Fish ships with a built-in `fish_jj_prompt` that only shows a conflict marker. This plugin replaces it with a much richer prompt: change ID, commit ID, bookmarks, ahead/behind counts, and status flags — all with ANSI color via jj's built-in coloring.
