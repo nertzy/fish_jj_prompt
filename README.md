@@ -94,6 +94,8 @@ set -g fish_jj_prompt_bold false              # disable bold text
 set -g fish_jj_prompt_description_length 40   # longer descriptions
 set -g fish_jj_prompt_description_length 0    # full description, no truncation
 set -g fish_jj_prompt_show_description false   # hide description entirely
+set -g fish_jj_prompt_show_tags false          # hide tags
+set -g fish_jj_prompt_show_other_authors false # hide other authors
 ```
 
 ## Prompt Output Examples
