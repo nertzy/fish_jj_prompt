@@ -85,6 +85,8 @@ touch .disable-jj-prompt
 | `fish_jj_prompt_bold` | `true` | Set to `false` to disable bold text. |
 | `fish_jj_prompt_show_description` | `true` | Set to `false` to hide the commit description. |
 | `fish_jj_prompt_description_length` | `24` | Max characters for commit description. `0` for no truncation. |
+| `fish_jj_prompt_show_tags` | `true` | Set to `false` to disable tag display. Bookmarks at @ will still be displayed. |
+| `fish_jj_prompt_show_other_authors` | `true` | Set to `false` to disable displaying not mine() authors. |
 
 ```fish
 # In config.fish or interactively:

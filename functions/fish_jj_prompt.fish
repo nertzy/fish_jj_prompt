@@ -89,8 +89,13 @@ if(self.contained_in("::trunk() & ~::@"),
     set -l behind 0
     set -l ahead 0
     set -l display_bookmarks
+    # whether or not to show tags in the prompt (configurable via fish_jj_prompt_show_tags)
     set -l show_tags true
     set -q fish_jj_prompt_show_tags; and set show_tags $fish_jj_prompt_show_tags
+
+    # whether or not to show other author in prompt (configurable via fish_jj_prompt_show_other_authors)
+    set -l show_author true
+    set -q fish_jj_prompt_show_other_authors; and set show_author $fish_jj_prompt_show_other_authors
 
     for line in $raw_lines
         if test "$line" = B
@@ -133,7 +138,7 @@ if(self.contained_in("::trunk() & ~::@"),
             end
             # Author (only shown if not mine)
             set -l author_label ""
-            if test "$parts[2]" != "."
+            if test "$parts[2]" != "."; and test "$show_author" = true
                 set -l author_color (printf '\e[38;5;3m')
                 set author_label " $author_color$parts[2]$reset"
             end

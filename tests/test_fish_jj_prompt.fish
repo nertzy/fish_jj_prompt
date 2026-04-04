@@ -300,6 +300,17 @@ set -l out (get_prompt)
 # setup_repo empty + base + branch a + branch b + merge = 5 commits ahead
 @test "parallel paths all count toward ahead" (string match -q '*↑5*' "$out") $status -eq 0
 
+# --- disable displaying other authors ---
+# Create a commit as a different author using env vars for the render
+setup_repo
+echo "content" >file.txt
+jj desc --no-pager -m "some work" 2>/dev/null
+# Render prompt as a different user so mine() returns false
+set -g fish_jj_prompt_show_other_authors false
+set -l out (JJ_USER="Other User" JJ_EMAIL="other@example.com" get_prompt)
+
+@test "hides author for other commits when disabled" (string match -q '*test*' "$out") $status -ne 0
+set -e fish_jj_prompt_show_other_authors
 # --- Cleanup ---
 
 rm -rf $test_dir
