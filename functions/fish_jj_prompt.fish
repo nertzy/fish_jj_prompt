@@ -18,8 +18,8 @@ function fish_jj_prompt
     # All jj queries use --color=never. Colors are applied in fish.
     #
     # Main query outputs structured plain text:
-    #   @ line:       change_id \t commit_id \t status \t bookmarks_or_dot
-    #   ancestor:     change_id \t bookmarks  (if bookmarked)
+    #   @ line:       change_id \t author \t bookmarks_or_dot \t tags_or_dot \t working_copies \t commit_id \t status \t immutable \t description
+    #   ancestor:     change_id \t bookmarks_or_dot \t tags_or_dot
     #   ancestor:     .                       (if not bookmarked)
     #   behind:       B
     #
@@ -34,13 +34,8 @@ if(self.contained_in("::trunk() & ~::@"),
         "\t" ++
         if(self.contained_in("mine()"), ".", coalesce(author.email().local(), author.name(), ".")) ++
         "\t" ++
-        coalesce(
-            separate(",",
-                if(local_bookmarks, local_bookmarks.join(",")),
-                if(tags, tags.join(",")),
-            ),
-            ".",
-        ) ++ "\t" ++
+        coalesce(if(local_bookmarks, local_bookmarks.join(",")), ".") ++ "\t" ++
+        coalesce(if(tags, tags.join(",")), ".") ++ "\t" ++
         working_copies ++ "\t" ++
         commit_id.shortest() ++ "\t" ++
         separate(" ",
@@ -58,12 +53,9 @@ if(self.contained_in("::trunk() & ~::@"),
         if(self.contained_in("trunk()"),
             ".\n",
             if(local_bookmarks,
-                change_id.shortest() ++ "\t" ++ separate(",",
-                    local_bookmarks.join(","),
-                    if(tags, tags.join(",")),
-                ) ++ "\n",
+                change_id.shortest() ++ "\t" ++ local_bookmarks.join(",") ++ "\t" ++ coalesce(if(tags, tags.join(",")), ".") ++ "\n",
                 if(tags,
-                    change_id.shortest() ++ "\t" ++ tags.join(",") ++ "\n",
+                    change_id.shortest() ++ "\t.\t" ++ tags.join(",") ++ "\n",
                     ".\n",
                 )
             )
@@ -97,6 +89,8 @@ if(self.contained_in("::trunk() & ~::@"),
     set -l behind 0
     set -l ahead 0
     set -l display_bookmarks
+    set -l show_tags true
+    set -q fish_jj_prompt_show_tags; and set show_tags $fish_jj_prompt_show_tags
 
     for line in $raw_lines
         if test "$line" = B
@@ -108,10 +102,10 @@ if(self.contained_in("::trunk() & ~::@"),
         set -l parts (string split \t -- $line)
         set -l nparts (count $parts)
 
-        if test $nparts -ge 8
-            # @ line fields: change_id[1] author[2] bookmarks[3] working_copies[4] commit_id[5] status[6] immutable[7] description[8]
+        if test $nparts -ge 9
+            # @ line fields: change_id[1] author[2] bookmarks[3] tags[4] working_copies[5] commit_id[6] status[7] immutable[8] description[9]
             # Separate (divergent) from other status flags for distinct coloring
-            set -l st $parts[6]
+            set -l st $parts[7]
             set -l divergent_label ""
             set -l cid_color $bold_brmagenta
             if string match -q '*(divergent)*' -- "$st"
@@ -134,7 +128,7 @@ if(self.contained_in("::trunk() & ~::@"),
             if test "$st" = "*"
                 set status_color $bold_yellow
             end
-            if test "$parts[7]" = true
+            if test "$parts[8]" = true
                 set has_immutable 1
             end
             # Author (only shown if not mine)
@@ -143,26 +137,33 @@ if(self.contained_in("::trunk() & ~::@"),
                 set -l author_color (printf '\e[38;5;3m')
                 set author_label " $author_color$parts[2]$reset"
             end
-            # Bookmarks at @
-            set -l at_bookmarks ""
+            set -l at_labels
             if test "$parts[3]" != "."
-                set -l at_bm_list
                 for bookmark in (string split ',' -- $parts[3])
                     set bookmark (string trim -- $bookmark)
                     if test -n "$bookmark"
-                        set -a at_bm_list "$bold_brmagenta$bookmark$reset"
+                        set -a at_labels "$bold_brmagenta$bookmark$reset"
                     end
                 end
-                if test (count $at_bm_list) -gt 0
-                    set at_bookmarks " "(string join ' ' $at_bm_list)
+            end
+            if test "$show_tags" = true; and test "$parts[4]" != "."
+                for tag in (string split ',' -- $parts[4])
+                    set tag (string trim -- $tag)
+                    if test -n "$tag"
+                        set -a at_labels "$bold_brmagenta$tag$reset"
+                    end
                 end
+            end
+            set -l at_bookmarks ""
+            if test (count $at_labels) -gt 0
+                set at_bookmarks " "(string join ' ' $at_labels)
             end
             # Show workspace if multiple workspaces exist
             set -l workspace_label ""
             set -l wc_count (jj workspace list --no-pager --color=never 2>/dev/null | count)
-            if test $wc_count -gt 1; and test -n "$parts[4]"
+            if test $wc_count -gt 1; and test -n "$parts[5]"
                 set -l bold_brgreen_color (set_color brgreen)
-                set workspace_label " $bold_brgreen_color$parts[4]$reset"
+                set workspace_label " $bold_brgreen_color$parts[5]$reset"
             end
             # Description (configurable via fish_jj_prompt_show_description and fish_jj_prompt_description_length)
             set -l show_desc true
@@ -170,29 +171,36 @@ if(self.contained_in("::trunk() & ~::@"),
             set -l desc_length 24
             set -q fish_jj_prompt_description_length; and set desc_length $fish_jj_prompt_description_length
             set -l desc_label ""
-            if test -n "$parts[8]"; and test "$show_desc" = true
-                set -l desc $parts[8]
+            if test -n "$parts[9]"; and test "$show_desc" = true
+                set -l desc $parts[9]
                 if test $desc_length -gt 0; and test (string length -- $desc) -gt $desc_length
                     set desc (string sub -l $desc_length -- $desc)"…"
                 end
-                if test "$parts[8]" = "(no description set)"
+                if test "$parts[9]" = "(no description set)"
                     set desc_label " $status_color$desc$reset"
                 else
                     set desc_label " $desc"
                 end
             end
-            set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[5]$reset$conflict_label $status_color$st$reset$divergent_label$desc_label"
-        else if test $nparts -eq 2
-            # Ancestor with bookmarks: change_id, bookmarks
+            set info "$cid_color$parts[1]$reset$author_label$at_bookmarks$workspace_label $bold_brblue$parts[6]$reset$conflict_label $status_color$st$reset$divergent_label$desc_label"
+        else if test $nparts -eq 3
             set -l cid $parts[1]
             set -l depth_commits (jj log --no-pager --no-graph --ignore-working-copy --color=never \
                 -r "$cid::@ ~ $cid" -T '".\n"' 2>/dev/null)
             set -l depth (count $depth_commits)
-            for bookmark in (string split ',' -- $parts[2])
-                set bookmark (string trim -- $bookmark)
-                if test -n "$bookmark"
-                    set -l nobold (printf '\e[22m')
-                    set -a display_bookmarks "$magenta$bookmark$nobold$magenta↑$depth$reset$bold"
+            for label_field in 2 3
+                if test $label_field -eq 3; and test "$show_tags" != true
+                    continue
+                end
+                if test "$parts[$label_field]" = "."
+                    continue
+                end
+                for bookmark in (string split ',' -- $parts[$label_field])
+                    set bookmark (string trim -- $bookmark)
+                    if test -n "$bookmark"
+                        set -l nobold (printf '\e[22m')
+                        set -a display_bookmarks "$magenta$bookmark$nobold$magenta↑$depth$reset$bold"
+                    end
                 end
             end
         end

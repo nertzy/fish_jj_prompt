@@ -149,6 +149,27 @@ set -l out (get_prompt)
 
 @test "shows ancestor bookmark with depth" (string match -qr 'my-branch.*↑1' "$out") $status -eq 0
 
+
+# --- Ancestor tag with depth ---
+
+setup_repo
+echo "base" >file.txt
+jj desc --no-pager -m "base" 2>/dev/null
+jj bookmark create --no-pager my-branch -r@ 2>/dev/null
+jj tag set --no-pager release-2 -r@ 2>/dev/null
+jj new --no-pager 2>/dev/null
+echo "child" >file2.txt
+jj desc --no-pager -m "child" 2>/dev/null
+set -l out (get_prompt)
+
+@test "shows ancestor tag with depth by default" (string match -qr 'release-2.*↑2' "$out") $status -eq 0
+
+set -g fish_jj_prompt_show_tags false
+set -l out (get_prompt)
+@test "hides ancestor tag when false" (string match -q '*release-2*' "$out") $status -ne 0
+@test "keeps ancestor bookmark when tags hidden" (string match -qr 'my-branch.*↑2' "$out") $status -eq 0
+set -e fish_jj_prompt_show_tags
+
 # --- Multiple commits ahead ---
 
 setup_repo
