@@ -165,7 +165,7 @@ if(self.contained_in("::trunk() & ~::@"),
             end
             # Show workspace if multiple workspaces exist
             set -l workspace_label ""
-            set -l wc_count (jj workspace list --no-pager --color=never 2>/dev/null | count)
+            set -l wc_count (jj workspace list --no-pager --color=never --ignore-working-copy 2>/dev/null | count)
             if test $wc_count -gt 1; and test -n "$parts[5]"
                 set -l bold_brgreen_color (set_color brgreen)
                 set workspace_label " $bold_brgreen_color$parts[5]$reset"
