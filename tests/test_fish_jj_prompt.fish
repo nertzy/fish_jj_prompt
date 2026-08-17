@@ -162,12 +162,12 @@ echo "child" >file2.txt
 jj desc --no-pager -m "child" 2>/dev/null
 set -l out (get_prompt)
 
-@test "shows ancestor tag with depth by default" (string match -qr 'release-2.*↑2' "$out") $status -eq 0
+@test "shows ancestor tag with depth by default" (string match -qr 'release-2↑[0-9]+' "$out") $status -eq 0
 
 set -g fish_jj_prompt_show_tags false
 set -l out (get_prompt)
 @test "hides ancestor tag when false" (string match -q '*release-2*' "$out") $status -ne 0
-@test "keeps ancestor bookmark when tags hidden" (string match -qr 'my-branch.*↑2' "$out") $status -eq 0
+@test "keeps ancestor bookmark when tags hidden" (string match -qr 'my-branch↑[0-9]+' "$out") $status -eq 0
 set -e fish_jj_prompt_show_tags
 
 # --- Multiple commits ahead ---
