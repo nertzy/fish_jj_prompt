@@ -135,14 +135,22 @@ Tags on @ and ancestor commits between @ and trunk are shown alongside bookmarks
 (@ abc1 jdoe my-feature def2 * Fix login ↑1)      # someone else's commit
 ```
 
-## Testing
+## Development
 
-Tests use [Fishtape](https://github.com/jorgebucaran/fishtape), a TAP-based test runner for Fish.
+[mise](https://mise.jdx.dev) manages the jj version used for development and CI:
 
-```fish
-fisher install jorgebucaran/fishtape   # one-time setup
-fishtape tests/test_fish_jj_prompt.fish
+```sh
+mise install
 ```
+
+Tests use [Fishtape](https://github.com/jorgebucaran/fishtape), a TAP-based test runner for Fish. Install Fisher and Fishtape once with the project setup task, then run CI:
+
+```sh
+mise run setup   # one-time setup
+mise run ci
+```
+
+`mise run ci` runs Fish syntax and formatting checks followed by the Fishtape suite. The individual `mise run lint` and `mise run test` tasks are also available.
 
 ## License
 

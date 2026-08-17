@@ -11,16 +11,22 @@ source functions/fish_jj_prompt.fish
 fish_jj_prompt
 ```
 
-## Testing
+## Testing and linting
 
-Tests use [Fishtape](https://github.com/jorgebucaran/fishtape):
+Install the project-managed jj version, then use the setup task to install Fisher and [Fishtape](https://github.com/jorgebucaran/fishtape) once:
 
-```fish
-fisher install jorgebucaran/fishtape   # one-time setup
-fishtape tests/test_fish_jj_prompt.fish
+```sh
+mise install
+mise run setup
 ```
 
-Please add tests for new features and ensure all existing tests pass before submitting a PR.
+Run the project task before submitting a PR:
+
+```sh
+mise run ci
+```
+
+`mise run ci` validates Fish syntax and formatting, then runs the Fishtape suite. The individual `mise run lint` and `mise run test` tasks are also available. Please add tests for new features and ensure all existing tests pass before submitting a PR.
 
 ## Design Principles
 
