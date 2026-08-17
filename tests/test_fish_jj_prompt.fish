@@ -76,7 +76,7 @@ set -l out (get_prompt)
 # --- Modified commit ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 set -l out (get_prompt)
 
 @test "shows * for modified" (string match -q '* * *' "$out") $status -eq 0
@@ -84,7 +84,7 @@ set -l out (get_prompt)
 # --- Commit with description ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "Add new feature" 2>/dev/null
 set -l out (get_prompt)
 
@@ -93,7 +93,7 @@ set -l out (get_prompt)
 # --- Description truncation ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "This is a very long commit description that should be truncated" 2>/dev/null
 set -l out (get_prompt)
 
@@ -102,7 +102,7 @@ set -l out (get_prompt)
 # --- Configurable description length ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "This is a very long commit description" 2>/dev/null
 
 set -g fish_jj_prompt_description_length 10
@@ -118,7 +118,7 @@ set -e fish_jj_prompt_description_length
 # --- Show description toggle ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "Some description" 2>/dev/null
 
 set -g fish_jj_prompt_show_description false
@@ -129,8 +129,8 @@ set -e fish_jj_prompt_show_description
 # --- Bookmark at @ ---
 
 setup_repo
-echo "content" >file.txt
-jj desc --no-pager -m "work" 2>/dev/null
+echo content >file.txt
+jj desc --no-pager -m work 2>/dev/null
 jj bookmark create --no-pager my-feature -r@ 2>/dev/null
 set -l out (get_prompt)
 
@@ -139,27 +139,26 @@ set -l out (get_prompt)
 # --- Ancestor bookmark with depth ---
 
 setup_repo
-echo "base" >file.txt
-jj desc --no-pager -m "base" 2>/dev/null
+echo base >file.txt
+jj desc --no-pager -m base 2>/dev/null
 jj bookmark create --no-pager my-branch -r@ 2>/dev/null
 jj new --no-pager 2>/dev/null
-echo "child" >file2.txt
-jj desc --no-pager -m "child" 2>/dev/null
+echo child >file2.txt
+jj desc --no-pager -m child 2>/dev/null
 set -l out (get_prompt)
 
 @test "shows ancestor bookmark with depth" (string match -qr 'my-branch.*↑1' "$out") $status -eq 0
 
-
 # --- Ancestor tag with depth ---
 
 setup_repo
-echo "base" >file.txt
-jj desc --no-pager -m "base" 2>/dev/null
+echo base >file.txt
+jj desc --no-pager -m base 2>/dev/null
 jj bookmark create --no-pager my-branch -r@ 2>/dev/null
 jj tag set --no-pager release-2 -r@ 2>/dev/null
 jj new --no-pager 2>/dev/null
-echo "child" >file2.txt
-jj desc --no-pager -m "child" 2>/dev/null
+echo child >file2.txt
+jj desc --no-pager -m child 2>/dev/null
 set -l out (get_prompt)
 
 @test "shows ancestor tag with depth by default" (string match -qr 'release-2↑[0-9]+' "$out") $status -eq 0
@@ -173,14 +172,14 @@ set -e fish_jj_prompt_show_tags
 # --- Multiple commits ahead ---
 
 setup_repo
-echo "a" >a.txt
-jj desc --no-pager -m "first" 2>/dev/null
+echo a >a.txt
+jj desc --no-pager -m first 2>/dev/null
 jj new --no-pager 2>/dev/null
-echo "b" >b.txt
-jj desc --no-pager -m "second" 2>/dev/null
+echo b >b.txt
+jj desc --no-pager -m second 2>/dev/null
 jj new --no-pager 2>/dev/null
-echo "c" >c.txt
-jj desc --no-pager -m "third" 2>/dev/null
+echo c >c.txt
+jj desc --no-pager -m third 2>/dev/null
 set -l out (get_prompt)
 
 @test "shows correct ahead count" (string match -q '*↑4*' "$out") $status -eq 0
@@ -195,7 +194,7 @@ set -l out_raw (get_prompt_raw)
 # --- Bold toggle ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 
 set -g fish_jj_prompt_bold true
 set -l out_raw (get_prompt_raw)
@@ -210,7 +209,7 @@ set -e fish_jj_prompt_bold
 # --- Author display ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "my work" 2>/dev/null
 set -l out (get_prompt)
 
@@ -218,7 +217,7 @@ set -l out (get_prompt)
 
 # Create a commit as a different author using env vars for the render
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "some work" 2>/dev/null
 # Render prompt as a different user so mine() returns false
 set -l out (JJ_USER="Other User" JJ_EMAIL="other@example.com" get_prompt)
@@ -241,7 +240,7 @@ set -l out (get_prompt)
 # --- Field order ---
 
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "test desc" 2>/dev/null
 jj bookmark create --no-pager test-bm -r@ 2>/dev/null
 set -l out (get_prompt)
@@ -254,8 +253,8 @@ set -l desc_pos (string match -rn 'test desc' "$out" | string split ' ')[1]
 # --- Conflict display ---
 
 setup_repo
-echo "base" >conflict.txt
-jj desc --no-pager -m "base" 2>/dev/null
+echo base >conflict.txt
+jj desc --no-pager -m base 2>/dev/null
 jj new --no-pager 2>/dev/null
 echo "version a" >conflict.txt
 jj desc --no-pager -m "version a" 2>/dev/null
@@ -273,8 +272,8 @@ set -l out_raw (get_prompt_raw)
 # --- Arrows always non-bold ---
 
 setup_repo
-echo "content" >file.txt
-jj desc --no-pager -m "work" 2>/dev/null
+echo content >file.txt
+jj desc --no-pager -m work 2>/dev/null
 set -g fish_jj_prompt_bold true
 set -l out_raw (fish_jj_prompt | string escape)
 
@@ -285,17 +284,17 @@ set -e fish_jj_prompt_bold
 # --- Parallel paths ahead count ---
 
 setup_repo
-echo "base" >file.txt
-jj desc --no-pager -m "base" 2>/dev/null
+echo base >file.txt
+jj desc --no-pager -m base 2>/dev/null
 jj new --no-pager 2>/dev/null
-echo "a" >a.txt
+echo a >a.txt
 jj desc --no-pager -m "branch a" 2>/dev/null
 jj new --no-pager @- 2>/dev/null
-echo "b" >b.txt
+echo b >b.txt
 jj desc --no-pager -m "branch b" 2>/dev/null
 # Merge both branches
 jj new --no-pager "children(@-)" 2>/dev/null
-jj desc --no-pager -m "merge" 2>/dev/null
+jj desc --no-pager -m merge 2>/dev/null
 set -l out (get_prompt)
 # setup_repo empty + base + branch a + branch b + merge = 5 commits ahead
 @test "parallel paths all count toward ahead" (string match -q '*↑5*' "$out") $status -eq 0
@@ -303,7 +302,7 @@ set -l out (get_prompt)
 # --- disable displaying other authors ---
 # Create a commit as a different author using env vars for the render
 setup_repo
-echo "content" >file.txt
+echo content >file.txt
 jj desc --no-pager -m "some work" 2>/dev/null
 # Render prompt as a different user so mine() returns false
 set -g fish_jj_prompt_show_other_authors false

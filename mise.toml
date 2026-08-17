@@ -3,3 +3,33 @@ minimum_release_age = "1d"
 
 [tools]
 jj = "latest"
+
+[tasks.lint]
+description = "Lint Fish source and tests"
+run = [
+  "fish --no-execute functions/*.fish tests/*.fish",
+  "fish_indent --check functions/*.fish tests/*.fish",
+]
+
+[tasks.setup]
+description = "Install Fisher and Fishtape"
+run = """
+fish -c '
+if not type -q fisher
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    fisher install jorgebucaran/fisher
+end
+fisher install jorgebucaran/fishtape
+'
+"""
+
+[tasks.test]
+description = "Run the Fishtape suite"
+run = "fish -c 'fishtape tests/test_fish_jj_prompt.fish'"
+
+[tasks.ci]
+description = "Run linting and tests"
+run = """
+mise run lint
+mise run test
+"""

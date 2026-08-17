@@ -18,7 +18,11 @@ jobs:
 
       - uses: jdx/mise-action@v4
 
-      - name: Run tests
-        uses: fish-shop/run-fishtape-tests@v2
+      - name: Install Fishtape
+        uses: fish-shop/install-plugin@v2
         with:
-          patterns: tests/test_fish_jj_prompt.fish
+          plugin-manager: fisher
+          plugins: jorgebucaran/fishtape
+
+      - name: Run CI
+        run: mise run ci
