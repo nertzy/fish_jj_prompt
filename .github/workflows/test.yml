@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "37 14 * * 6"
 
 jobs:
   test:
@@ -14,11 +16,7 @@ jobs:
       - name: Install Fish
         uses: fish-shop/install-fish-shell@v2
 
-      - name: Install jj
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download --repo jj-vcs/jj --pattern '*x86_64-unknown-linux-musl*' --output - | sudo tar xz -C /usr/local/bin
+      - uses: jdx/mise-action@v4
 
       - name: Run tests
         uses: fish-shop/run-fishtape-tests@v2
